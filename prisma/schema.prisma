@@ -1,0 +1,117 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ------------------------------------------------------
+// 1. กำหนดตัวเลือกสถานะต่างๆ (Enums)
+// ------------------------------------------------------
+enum Role {
+  ADMIN
+  VET
+  RECEPTION
+  STAFF
+}
+
+enum BookingStatus {
+  WAITING
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum PaymentStatus {
+  UNPAID
+  PARTIAL
+  PAID
+}
+
+// ------------------------------------------------------
+// 2. โครงสร้างตารางฐานข้อมูล (Models)
+// ------------------------------------------------------
+
+model Staff {
+  id        String   @id @default(uuid())
+  firstName String
+  lastName  String
+  nickname  String?
+  role      Role     @default(STAFF)
+  phone     String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  bookings       Booking[]
+  serviceRecords ServiceRecord[]
+}
+
+model Customer {
+  id        String   @id @default(uuid())
+  fullName  String
+  phone     String   @unique
+  email     String?
+  address   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  targets  ServiceTarget[]
+  bookings Booking[]
+}
+
+model ServiceTarget {
+  id           String   @id @default(uuid())
+  customerId   String
+  customer     Customer @relation(fields: [customerId], references: [id])
+  name         String
+  category     String   
+  attributes   Json?    
+  medicalNotes String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  bookings       Booking[]
+  serviceRecords ServiceRecord[]
+}
+
+model Booking {
+  id            String         @id @default(uuid())
+  customerId    String
+  customer      Customer       @relation(fields: [customerId], references: [id])
+  targetId      String?
+  target        ServiceTarget? @relation(fields: [targetId], references: [id])
+  staffId       String?
+  staff         Staff?         @relation(fields: [staffId], references: [id])
+  bookingTime   DateTime
+  serviceType   String
+  status        BookingStatus  @default(WAITING)
+  paymentStatus PaymentStatus  @default(UNPAID)
+  notes         String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  serviceRecords ServiceRecord[]
+}
+
+model ServiceRecord {
+  id          String        @id @default(uuid())
+  bookingId   String
+  booking     Booking       @relation(fields: [bookingId], references: [id])
+  targetId    String
+  target      ServiceTarget @relation(fields: [targetId], references: [id])
+  staffId     String
+  staff       Staff         @relation(fields: [staffId], references: [id])
+  symptoms    String?
+  diagnosis   String?
+  treatment   String?
+  medication  String?
+  attachments Json?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
