@@ -63,6 +63,7 @@ model Customer {
 
   targets  ServiceTarget[]
   bookings Booking[]
+  invoices    Invoice[]
 }
 
 model ServiceTarget {
@@ -114,4 +115,30 @@ model ServiceRecord {
   attachments Json?
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
+}
+
+// --- เสาหลักที่ 6: ระบบการเงิน (Billing & Payment) ---
+
+model Invoice {
+  id          String    @id @default(uuid())
+  customerId  String
+  customer    Customer  @relation(fields: [customerId], references: [id])
+  amount      Float     // ยอดรวมที่ต้องชำระ
+  status      String    @default("UNPAID") // สถานะ: UNPAID (ยังไม่จ่าย), PAID (จ่ายแล้ว), CANCELLED (ยกเลิก)
+  dueDate     DateTime? // วันครบกำหนดชำระ
+  notes       String?   // หมายเหตุ (เช่น ค่าบริการ, มัดจำ)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  payments    Payment[]
+}
+
+model Payment {
+  id            String   @id @default(uuid())
+  invoiceId     String
+  invoice       Invoice  @relation(fields: [invoiceId], references: [id])
+  amountPaid    Float    // ยอดเงินที่รับชำระเข้ามา
+  paymentMethod String   // ช่องทางชำระ: CASH (เงินสด), TRANSFER (โอน), CREDIT (บัตร)
+  paymentDate   DateTime @default(now())
+  notes         String?
 }
